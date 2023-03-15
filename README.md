@@ -2,7 +2,7 @@
 
 Discord bot for monitoring the financial markets.
 
-<img src="doc/summary_output.png" width=40%>
+<img src="docs/summary_output.png" width=40%>
 
 ## Features
 
