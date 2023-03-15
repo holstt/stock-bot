@@ -1,6 +1,7 @@
 import requests
 from datetime import datetime, timedelta
 import yfinance as yf
+import pandas as pd
 
 ENDPOINT = 'https://www.alphavantage.co/query'
 
@@ -16,10 +17,8 @@ class StockSummary:
         self.latest_close = latest_close 
         self.percent_change_5d = percent_change_5d
 
-    def __str__(self):
-        return f"{self.symbol}: {self.percent_change_5d:.2f}%"
-
-
+    # def __str__(self):
+    #     return f"{self.symbol}: {self.percent_change_5d:.2f}%"
 
 # TODO: Consider NaN values
 # def get_multi():
@@ -38,9 +37,12 @@ class StockSummary:
 # Get weekly summary for a stock using yfinance
 def get_weekly_summary(symbol: str):
     ticker = yf.Ticker(symbol)
-    data = ticker.history(period="5d") # trading week = 5 days
-    price_change = (data['Close'][-1] - data['Close'][0])
-    percent_change = price_change / data['Close'][0] * 100
+    # Request trading week = 5 days
+    data = ticker.history(period="5d") 
 
-    return StockSummary(symbol,data['Close'][0], percent_change)
+
+    price_change: float = (data['Close'][-1] - data['Close'][0])
+    percent_change: float = price_change / data['Close'][0] * 100 
+
+    return StockSummary(symbol, data['Close'][0], percent_change)
 
