@@ -1,48 +1,39 @@
-import requests
-from datetime import datetime, timedelta
+import logging
+from datetime import datetime
+
 import yfinance as yf
-import pandas as pd
 
-ENDPOINT = 'https://www.alphavantage.co/query'
+from src.models import PriceEntry, StockPricePeriod
 
-
-# Client for alpha vantage class
-class AlphaVantageClient:
-    pass
+logger = logging.getLogger(__name__)
 
 
-class StockSummary:
-    def __init__(self, symbol: str, latest_close: float, percent_change_5d: float):
-        self.symbol = symbol
-        self.latest_close = latest_close 
-        self.percent_change_5d = percent_change_5d
+# Get weekly summary for a stock using yfinance
+def get_5d_summary(ticker_str: str) -> StockPricePeriod:
+    ticker = yf.Ticker(ticker_str)
+    # NB: Trading week is 5 days. Only trading days are included in yfinance data
+    data = ticker.history(period="5d")
 
-    # def __str__(self):
-    #     return f"{self.symbol}: {self.percent_change_5d:.2f}%"
+    if data.empty:
+        raise Exception(f"Could not get data for {ticker_str}. Ensure ticker is valid")
 
-# TODO: Consider NaN values
-# def get_multi():
+    logger.debug(f"Got data for {ticker_str}. Length: {len(data)}")
+
+    price_entries = [
+        PriceEntry(
+            date=datetime.fromisoformat(str(index)),
+            open=row["Open"],
+            close=row["Close"],
+            high=row["High"],
+            low=row["Low"],
+        )
+        for index, row in data.iterrows()
+    ]
+    return StockPricePeriod(ticker_str, price_entries)
+
+
+# TODO: Get multiple stocks at once
+# TODO: Consider NaN values in response due to diff timezones?
+# def get_multiple():
 #     symbols = [index.symbol for index in indices]
 #     data = yf.download(symbols, period="5d")
-#     percent_changes = (data['Close'].iloc[-2] - data['Close'].iloc[0]) / data['Close'].iloc[0] * 100
-#     print(percent_changes)
-#     exit()
-#     for index, percent_change in zip(indices, percent_changes):
-#         index.percent_change_5d = percent_change
-    
-#     for index in indices:
-#         index.percent_change_5d = percent_changes[index.symbol]
-
-# XXX: Async version?
-# Get weekly summary for a stock using yfinance
-def get_weekly_summary(symbol: str):
-    ticker = yf.Ticker(symbol)
-    # Request trading week = 5 days
-    data = ticker.history(period="5d") 
-
-
-    price_change: float = (data['Close'][-1] - data['Close'][0])
-    percent_change: float = price_change / data['Close'][0] * 100 
-
-    return StockSummary(symbol, data['Close'][0], percent_change)
-

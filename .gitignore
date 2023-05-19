@@ -1,5 +1,9 @@
 # CUSTOM
 .vscode
+*config*
+
+!config.py
+!example.config.yml
 
 
 # Byte-compiled / optimized / DLL files

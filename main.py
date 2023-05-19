@@ -1,122 +1,103 @@
-import discord
-from discord import app_commands
 import logging
-import time
-from pathlib import Path
-import argparse
-from dotenv import load_dotenv
-from os import environ as env
-# from tabulate import tabulate
-from src.service import StockSummary, get_weekly_summary  
-from table2ascii import table2ascii
-from typing import TypedDict
-from discord.abc import PrivateChannel
-from tabulate import tabulate, SEPARATING_LINE
-from table2ascii import table2ascii, Alignment
 
-# Setup logging
-logging.basicConfig(
-    level=logging.NOTSET,
-    format='[%(asctime)s] [%(levelname)s] %(name)-25s %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S',
-)
-logging.Formatter.converter = time.gmtime  # Use UTC
+import discord
+from discord.ext import commands
+from table2ascii import Alignment, table2ascii
+
+from src import config, utils
+from src.models import StockPricePeriod
+from src.service import get_5d_summary
+
+utils.setup_logging()
+# utils.setup_logging(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-ap = argparse.ArgumentParser()
-# Optional argument for .env file path
-ap.add_argument("-e", "--env", required=False,
-                help="Path of .env file", default=".env")
-args = vars(ap.parse_args())
-
-env_path = args["env"]
-if not Path(env_path).exists():
-    # print(f"WARNING: No .env file found (path was '{env_path}')")
-    raise IOError(f"No .env file found (path was '{env_path}')")
-
-# Load environment
-load_dotenv(dotenv_path=args["env"])
+app_config = config.load_config()
 
 intents = discord.Intents.default()
-client = discord.Client(intents=intents)
-tree = app_commands.CommandTree(client)  # For slash commands
+bot = commands.Bot(command_prefix="", intents=intents)
 
 
-TARGET_GUILD_ID = int(env['TARGET_GUILD_ID'])
-DEV_CHANNEL_ID =  int(env['DEV_CHANNEL_ID'])
-
-@client.event
+@bot.event
 async def on_ready():
-    ready_msg = f'Bot is online ({client.user})'
-    # await tree.sync()
+    await sync_commands()
+    logger.info(f"Bot is online ({bot.user})")
+
+
+async def sync_commands():
     try:
-        logger.info(f"Syncing commands to target guild (id: {TARGET_GUILD_ID})...")
-        # await tree.sync(guild=TARGET_GUILD_ID)
-        await tree.sync(guild=discord.Object(TARGET_GUILD_ID))
+        logger.info(
+            f"Syncing commands to target guild (id: {app_config.target_guild})..."
+        )
+        await bot.tree.sync(guild=discord.Object(app_config.target_guild))
+        # await tree.sync()
         logger.info("Syncing commands to target guild succeeded")
     except discord.errors.Forbidden as e:
-        exception_msg = f"Syncing commands to target guild failed. Access denied for guild with id: {TARGET_GUILD_ID}"
+        exception_msg = f"Syncing commands to target guild failed. Access denied for guild with id: {app_config.target_guild}"
         raise Exception(exception_msg) from e
 
-    logging.info(ready_msg)
-    channel = client.get_channel(DEV_CHANNEL_ID)
-    if not channel or not isinstance(channel, discord.abc.Messageable):
-        raise Exception(f"Dev channel not found or invalid (id: {DEV_CHANNEL_ID})")
 
-    await channel.send(ready_msg)
+RED = 0xFF0000
+GREEN = 0x00FF00
 
 
-# Use Color class
-RED = 0xff0000
-GREEN = 0x00ff00
-
-
-# TODO: 
-
-@tree.command(name='stocks-summary', description='Weekly market summary', guild=discord.Object(TARGET_GUILD_ID))
+@bot.tree.command(
+    name="stock-summary",
+    description="Weekly market summary of the stocks you follow",
+    guild=discord.Object(app_config.target_guild),
+)
 async def summary(interaction: discord.Interaction):
-    global cache
+    tickers = app_config.tickers
 
-    # TODO: User should define a portfolio of tickers they want to track
-    symbols = ["^OMXC25", "^GSPC", "^DJI", "^IXIC", "^FTSE", "^GDAXI", "^N225", "^HSI"]
-    # symbols = ["^OMXC25", "^GSPC", "^DJI"]
-    # symbols = ["^OMXC25"]
-    
-    # iterate the list of indices and get the weekly summary then put in table ascii
-    stockSummaries = [get_weekly_summary(symbol) for symbol in symbols]
-    # sort by percent change
-    stockSummaries.sort(key=lambda x: x.percent_change_5d, reverse=True)
+    stock_price_periods = [get_5d_summary(ticker) for ticker in tickers]
+    stock_price_periods.sort(key=lambda x: x.period_percent_change, reverse=True)
 
-    # if average of all percent changes is positive, print hello
-    if sum([stock.percent_change_5d for stock in stockSummaries]) > 0:
+    table_ascii = create_table(stock_price_periods)
+
+    # Set embed color based on whether the sum of all percent changes is positive or negative
+    if sum([stock.period_percent_change for stock in stock_price_periods]) > 0:
         embed_color = GREEN
     else:
         embed_color = RED
 
-
-    msg_rows = [[stock.symbol, f"{stock.latest_close:.2f}", f"{stock.percent_change_5d:.2f} %"] for stock in stockSummaries]
-    cache = msg_rows
-
-
-    # msg_rows[1] = SEPARATING_LINE
-    table_ascii = table2ascii(
-        header=["Symbol", "Price", "Weekly Change"],
-        body=msg_rows, alignments=[Alignment.LEFT, Alignment.RIGHT, Alignment.RIGHT])
-    
-    # make table with left aligned columns
-    # table_ascii = tabulate(msg_rows, headers=["Symbol", "Price", "Weekly Change"], tablefmt=table_type, stralign="right")
-    # insert into table ascii
-    # table_ascii = table2ascii( 
-    #     header=["Symbol", "Price", "Weekly Change"],
-    #     body=[
-    #     [
-    #         msg_rows.symbol,
-    #         f"{msg_rows.latest_close:.2f}",
-    #         f"{msg_rows.percent_change_5d:+.2f}%"]])
-
-    embed = discord.Embed(title="📈 Weekly Stock Market Update", url="https://finance.yahoo.com/quote/", color=embed_color)
-    embed.description = f"```{table_ascii}```"
+    embed = create_embed(table_ascii, embed_color, stock_price_periods)
     await interaction.response.send_message(embed=embed)
 
 
-client.run(env['BOT_TOKEN'])
+def create_table(stock_price_periods: list[StockPricePeriod]):
+    msg_rows = [
+        [
+            stock.ticker,
+            f"{stock.period_close:.2f}",
+            f"{stock.period_percent_change:.2f} %",
+        ]
+        for stock in stock_price_periods
+    ]
+    table_ascii = table2ascii(
+        header=["Ticker", "Last Close", "Weekly Change"],
+        body=msg_rows,
+        alignments=[Alignment.LEFT, Alignment.RIGHT, Alignment.CENTER],
+    )
+
+    return table_ascii
+
+
+def create_embed(table_ascii, embed_color, stock_price_periods: list[StockPricePeriod]):
+    embed = discord.Embed(
+        title="📈 Weekly Stock Market Update",
+        url="https://finance.yahoo.com/quote/",
+        color=embed_color,
+    )
+    embed.description = f"```{table_ascii}```"
+
+    period_start = stock_price_periods[0].price_entries[0].date
+    period_end = stock_price_periods[0].price_entries[-1].date
+    trading_days = len(stock_price_periods[0].price_entries)
+    embed.set_footer(
+        text=f"Data period: {period_start.strftime('%d/%m')} - {period_end.strftime('%d/%m')} ({trading_days} trading days)"
+    )
+
+    return embed
+
+
+bot.run(app_config.bot_token, log_handler=None)

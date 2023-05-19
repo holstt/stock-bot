@@ -1,0 +1,7 @@
+bot_token: "BOT_TOKEN"
+target_guild: 1234567890
+tickers:
+  - NVDA
+  - TSLA
+  - BTC-USD
+  - ^DJI
