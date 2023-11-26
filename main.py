@@ -41,13 +41,18 @@ RED = 0xFF0000
 GREEN = 0x00FF00
 
 
+# Slash command for getting weekly summary of stocks
 @bot.tree.command(
     name="stock-summary",
     description="Weekly market summary of the stocks you follow",
     guild=discord.Object(app_config.target_guild),
 )
 async def summary(interaction: discord.Interaction):
+    # Defer response, as fetching may take more than 3 seconds (interaction timeout)
+    await interaction.response.defer()
+    # Get tickers from config
     tickers = app_config.tickers
+    logger.info(f"Getting stock summary for {len(tickers)} tickers: {tickers}")
 
     stock_price_periods = [get_5d_summary(ticker) for ticker in tickers]
     stock_price_periods.sort(key=lambda x: x.period_percent_change, reverse=True)
@@ -61,7 +66,7 @@ async def summary(interaction: discord.Interaction):
         embed_color = RED
 
     embed = create_embed(table_ascii, embed_color, stock_price_periods)
-    await interaction.response.send_message(embed=embed)
+    await interaction.followup.send(embed=embed)
 
 
 def create_table(stock_price_periods: list[StockPricePeriod]):

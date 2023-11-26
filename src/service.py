@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 
 # Get weekly summary for a stock using yfinance
 def get_5d_summary(ticker_str: str) -> StockPricePeriod:
+    logger.debug(f"Getting data for {ticker_str}...")
     ticker = yf.Ticker(ticker_str)
     # NB: Trading week is 5 days. Only trading days are included in yfinance data
     data = ticker.history(period="5d")
