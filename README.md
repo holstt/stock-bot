@@ -26,7 +26,9 @@ This project is a work-in-progress. Here are some of the upcoming features:
 
 ## Requirements
 
-- A [Discord bot token](https://discord.com/developers/docs/intro)
+- A [Discord app](https://discord.com/developers/docs/intro) with the following bot permissions:
+  - `Send Messages`
+  - `Use Slash Commands`
 - The [Poetry package manager](https://python-poetry.org/docs/#installation)
 
 ## Getting Started
