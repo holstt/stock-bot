@@ -1,0 +1,15 @@
+version: "3.8"
+
+name: stockbot
+
+services:
+  app:
+    restart: "on-failure:5"
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    # Mount config file into container project root
+    volumes:
+      - ../config.yml:/app/config.yml
+    environment:
+      - PYTHONUNBUFFERED=1

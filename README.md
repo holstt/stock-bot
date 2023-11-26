@@ -42,7 +42,7 @@ cd stock-bot
 
 **2. Create a config file**
 
-`example.config.yml` can be used as a template for the config file. Rename it to `config.yml` and fill in the required fields. It is also possible to use a custom config path by passing the `--config` argument to the bot (see below).
+`example.config.yml` can be used as a template for the config file. Rename it to `config.yml` and fill in the required fields. If the config file is not placed in project root, the config path should be specified when running the bot (see step 4).
 
 ```yaml
 # ./example.config.yml
@@ -61,6 +61,8 @@ tickers:
   - ^DJI
 ```
 
+### Local install
+
 **3. Install dependencies**
 
 ```bash
@@ -77,4 +79,13 @@ python ./main.py
 
 # Run the bot using a custom config file path
 python ./main.py --config /path/to/config
+```
+
+### Docker
+
+A docker-compose template can be found in `./docker/docker-compose.yml`. Ensure the volume paths are correct before running the bot.
+
+```bash
+cd docker
+docker compose up -d
 ```
