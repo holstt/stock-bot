@@ -6,30 +6,31 @@ Discord bot for monitoring the financial markets
 
 ## Features
 
-- Use `/stock-summary` command to get a weekly status on the stocks you follow (last 5 trading days)
+-   Use `/stock-summary` command to get a weekly status on the stocks you follow (last 5 trading days)
+-   Use `/stock-chart <ticker>` command to get the yearly chart for a stock
 
 #### TODO:
 
 This project is a work-in-progress. Here are some of the upcoming features:
 
-- [ ] Schedule stock summary updates at custom frequency
-- [ ] Look up information about individual stocks (e.g. price, market cap, earnings, etc.)
-- [ ] Alerts
-  - [ ] Price alerts: Get notified when a stock reaches a certain price
-  - [ ] Indicator alerts: Get notified when a stock reaches a certain value for a technical indicator (e.g. RSI, MACD, etc.)
-  - [ ] Events: Get notified when a high-impact event occurs (e.g. release of economic indicators, interest rates, earning reports for stocks you follow)
-- [ ] News
-  - [ ] Provide news related to the stocks you follow
-  - [ ] Sentiment analysis of news related to the stocks you follow
-- [ ] Virtual portfolio: Simulate trading and get a summary of your performance
-- [ ] Trading opportunities: Get notified before an indicator suggests a trading opportunity for a stock you follow
+-   [ ] Schedule stock summary updates at custom frequency
+-   [ ] Look up information about individual stocks (e.g. price, market cap, earnings, etc.)
+-   [ ] Alerts
+    -   [ ] Price alerts: Get notified when a stock reaches a certain price
+    -   [ ] Indicator alerts: Get notified when a stock reaches a certain value for a technical indicator (e.g. RSI, MACD, etc.)
+    -   [ ] Events: Get notified when a high-impact event occurs (e.g. release of economic indicators, interest rates, earning reports for stocks you follow)
+-   [ ] News
+    -   [ ] Provide news related to the stocks you follow
+    -   [ ] Sentiment analysis of news related to the stocks you follow
+-   [ ] Virtual portfolio: Simulate trading and get a summary of your performance
+-   [ ] Trading opportunities: Get notified before an indicator suggests a trading opportunity for a stock you follow
 
 ## Requirements
 
-- A [Discord app](https://discord.com/developers/docs/intro) with the following bot permissions:
-  - `Send Messages`
-  - `Use Slash Commands`
-- The [Poetry package manager](https://python-poetry.org/docs/#installation)
+-   A [Discord app](https://discord.com/developers/docs/intro) with the following bot permissions:
+    -   `Send Messages`
+    -   `Use Slash Commands`
+-   The [Poetry package manager](https://python-poetry.org/docs/#installation)
 
 ## Getting Started
 
@@ -55,10 +56,10 @@ target_guild: 1234567890
 
 # Example tickers. Find ticker symbols at https://finance.yahoo.com/
 tickers:
-  - NVDA
-  - TSLA
-  - BTC-USD
-  - ^DJI
+    - NVDA
+    - TSLA
+    - BTC-USD
+    - ^DJI
 ```
 
 ### Local install

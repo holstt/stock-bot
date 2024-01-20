@@ -1,3 +1,4 @@
+from io import BytesIO
 import logging
 
 import discord
@@ -6,7 +7,9 @@ from table2ascii import Alignment, table2ascii
 
 from src import config, utils
 from src.models import StockPricePeriod
-from src.service import get_5d_summary
+
+# from src.service import get_5d_summary, _create_plot
+from src import service
 
 utils.setup_logging()
 # utils.setup_logging(level=logging.DEBUG)
@@ -41,6 +44,31 @@ RED = 0xFF0000
 GREEN = 0x00FF00
 
 
+# Slash command for getting chart of a stock over the last year
+@bot.tree.command(
+    name="stock-chart",
+    description="Returns a 1Y chart of the ticker",
+    guild=discord.Object(app_config.target_guild),
+)
+async def chart(interaction: discord.Interaction, ticker: str):
+    logger.info(f"Creating message for ticker: {ticker}")
+    await interaction.response.defer()
+
+    result = service.get_chart_message(ticker)
+
+    if not result.buffer:
+        logger.info(
+            f"Creating message for ticker failed: {ticker}. Returning error message to user"
+        )
+        await interaction.followup.send(result.error_msg)
+        return
+
+    file = discord.File(result.buffer, filename=f"plot-{ticker}.png")
+
+    logger.info(f"Sending message to user for ticker")
+    await interaction.followup.send(embed=result.embed, file=file)  # type: ignore
+
+
 # Slash command for getting weekly summary of stocks
 @bot.tree.command(
     name="stock-summary",
@@ -54,7 +82,7 @@ async def summary(interaction: discord.Interaction):
     tickers = app_config.tickers
     logger.info(f"Getting stock summary for {len(tickers)} tickers: {tickers}")
 
-    stock_price_periods = [get_5d_summary(ticker) for ticker in tickers]
+    stock_price_periods = [service.get_5d_summary(ticker) for ticker in tickers]
     stock_price_periods.sort(key=lambda x: x.period_percent_change, reverse=True)
 
     table_ascii = create_table(stock_price_periods)

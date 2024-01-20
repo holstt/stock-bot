@@ -1,6 +1,7 @@
 # CUSTOM
 .vscode
 *config*
+test_data
 
 !example.config.yml
 
